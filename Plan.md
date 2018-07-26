@@ -5,6 +5,10 @@
 - 20180725 solution_keras 调试通过单个index, 但是精度太低
 -
 
+## Next
++ 自动下载数据和emb, requirement.txt
++ 处理后的数据保存下来
+
 ## Problems
 1. loss 太小, 使用tensorboard 查看各层各个变量的输出情况
     + 解决 : myLayer 中 使用 batch_dot, 结果中得到正常loss

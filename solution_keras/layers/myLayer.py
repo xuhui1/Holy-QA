@@ -1,7 +1,7 @@
 from keras import backend as K
 from keras.engine.topology import Layer
+from keras.initializers import RandomNormal
 
-import tensorflow as tf
 
 class MyLayer(Layer):
     def __init__(self, output_dim, dim_lstm_context, dim_lstm_question, **kwargs):
@@ -15,7 +15,7 @@ class MyLayer(Layer):
         # Create a trainable weight variable for this layer.
         self.kernel = self.add_weight(name='kernel',
                                       shape=(self.dim_lstm_context, self.dim_lstm_question),
-                                      initializer='ones',
+                                      initializer=RandomNormal(mean=0.0, stddev=0.5, seed=None),
                                       trainable=True)
         super(MyLayer, self).build(input_shape)  # Be sure to call this somewhere!
 

@@ -70,12 +70,14 @@ model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['categori
 """
 model fit
 """
-tb_cb = keras.callbacks.TensorBoard(log_dir=log_filepath, write_images=1, histogram_freq=1)
-# 设置log的存储位置，将网络权值以图片格式保持在tensorboard中显示，设置每一个周期计算一次网络的
-# 权值，每层输出值的分布直方图
-cbks = [tb_cb]
+# tb_cb = keras.callbacks.TensorBoard(log_dir=log_filepath, write_images=1, histogram_freq=1)
+# # 设置log的存储位置，将网络权值以图片格式保持在tensorboard中显示，设置每一个周期计算一次网络的
+# # 权值，每层输出值的分布直方图
+# cbks = [tb_cb]
+# history = model.fit(x=[pad_txt_train_cnt, pad_txt_train_qst], y=idx_train_beg_array, epochs=100, batch_size=256,
+#             verbose=1, callbacks=cbks, validation_data=[[pad_txt_dev_cnt, pad_txt_dev_qst], idx_dev_beg_array])
 history = model.fit(x=[pad_txt_train_cnt, pad_txt_train_qst], y=idx_train_beg_array, epochs=100, batch_size=256,
-            verbose=1, callbacks=cbks, validation_data=[[pad_txt_dev_cnt, pad_txt_dev_qst], idx_dev_beg_array])
+            verbose=1, validation_data=[[pad_txt_dev_cnt, pad_txt_dev_qst], idx_dev_beg_array])
 model.save('squad_beg_index.h5', overwrite=True)
 # """
 # model evaluate

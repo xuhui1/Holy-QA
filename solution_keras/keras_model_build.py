@@ -13,6 +13,12 @@ from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD,Adam
 
 """
+tuning params
+"""
+num_epoch = 400
+batch_size = 512
+
+"""
 context average number of character is 123.22429519928848
 context max number of character is 679
 question average number of character is 10.249829358595155
@@ -64,7 +70,7 @@ model.summary()
 """
 model compile
 """
-opt = SGD(lr=0.1, clipnorm=1, clipvalue=0.5)
+opt = Adam(lr=0.1, clipnorm=1, clipvalue=0.5)
 model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['categorical_accuracy']) # https://keras.io/zh/metrics/
 # model.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=['sparse_categorical_crossentropy']) # https://keras.io/zh/metrics/
 """
@@ -76,7 +82,7 @@ model fit
 # cbks = [tb_cb]
 # history = model.fit(x=[pad_txt_train_cnt, pad_txt_train_qst], y=idx_train_beg_array, epochs=100, batch_size=256,
 #             verbose=1, callbacks=cbks, validation_data=[[pad_txt_dev_cnt, pad_txt_dev_qst], idx_dev_beg_array])
-history = model.fit(x=[pad_txt_train_cnt, pad_txt_train_qst], y=idx_train_beg_array, epochs=100, batch_size=256,
+history = model.fit(x=[pad_txt_train_cnt, pad_txt_train_qst], y=idx_train_beg_array, epochs=num_epoch, batch_size=batch_size,
             verbose=1, validation_data=[[pad_txt_dev_cnt, pad_txt_dev_qst], idx_dev_beg_array])
 model.save('squad_beg_index.h5', overwrite=True)
 # """

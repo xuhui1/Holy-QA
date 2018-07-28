@@ -290,12 +290,15 @@ def read_txt_from_file(file_path):
 
 # read index from file
 def read_index_from_file(file_path):
-    label_list = []
+    label_list_beg = []
+    label_list_end = []
     with open(file_path) as f:
         for tmp_line in f:
-            tmp_num = int(tmp_line.split(" ")[0])
-            label_list.append(tmp_num)
-    return label_list
+            tmp_beg = int(tmp_line.split(" ")[0])
+            tmp_end = int(tmp_line.split(" ")[1])
+            label_list_beg.append(tmp_beg)
+            label_list_end.append(tmp_end)
+    return label_list_beg, label_list_end
 
 
 def context_question_text_preprocess():
@@ -307,24 +310,16 @@ def context_question_text_preprocess():
     file_train_question = '../data/train.question'
     file_dev_context = '../data/dev.context'
     file_dev_question = '../data/dev.question'
-    file_train_beg_idx = '../data/train.span'
-    file_dev_beg_idx = '../data/dev.span'
-
-    # file_train_context = '../data/dev.context-simple'
-    # file_train_question = '../data/dev.question-simple'
-    # file_dev_context = '../data/dev.context-simple'
-    # file_dev_question = '../data/dev.question-simple'
-    # file_train_beg_idx = '../data/dev.span-simple'
-    # file_dev_beg_idx = '../data/dev.span-simple'
-
+    file_train_span = '../data/train.span'
+    file_dev_span = '../data/dev.span'
 
     # text and index list
     txt_train_cnt = read_txt_from_file(file_train_context)
     txt_train_qst = read_txt_from_file(file_train_question)
     txt_dev_cnt = read_txt_from_file(file_dev_context)
     txt_dev_qst = read_txt_from_file(file_dev_question)
-    idx_train_beg = read_index_from_file(file_train_beg_idx)
-    idx_dev_beg = read_index_from_file(file_dev_beg_idx)
+    idx_train_beg, idx_train_end = read_index_from_file(file_train_span)
+    idx_dev_beg, idx_dev_end = read_index_from_file(file_dev_span)
 
     cnt_all_txt = txt_train_cnt+txt_dev_cnt
     qst_all_txt = txt_train_qst+txt_dev_qst
@@ -344,7 +339,6 @@ def context_question_text_preprocess():
     l_all_qst = functools.reduce(lambda x, y: x+y, l_qst)
     l_average_cnt = l_all_cnt/len(cnt_all_txt)
     l_average_qst = l_all_qst/len(qst_all_txt)
-
 
     # 分词
     t = Tokenizer()  # 分词器
@@ -379,7 +373,8 @@ def context_question_text_preprocess():
 
     print("index of answer is index of word, not character")
 
-    return embedding_matrix, vocab_size, pad_txt_train_cnt, pad_txt_train_qst, pad_txt_dev_cnt, pad_txt_dev_qst, idx_train_beg, idx_dev_beg
+    return embedding_matrix, vocab_size, pad_txt_train_cnt, pad_txt_train_qst, pad_txt_dev_cnt, pad_txt_dev_qst, \
+           idx_train_beg, idx_train_end, idx_dev_beg, idx_dev_end, max_cnt_lngth, max_qst_lngth
 
 
 if __name__ == '__main__':

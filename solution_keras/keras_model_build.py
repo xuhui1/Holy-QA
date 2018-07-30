@@ -17,24 +17,24 @@ from solution_keras.layers.myLayer import MyLayer
 from keras.layers.wrappers import Bidirectional
 from keras.callbacks import EarlyStopping, TensorBoard
 from keras.layers.normalization import BatchNormalization
-
 from keras import regularizers
-
 from keras.optimizers import SGD,Adam
 
 """
 tuning params
 """
-num_epoch = 100
+cnt_max_len = 300
+qn_max_len = 30
+num_epoch = 200
 batch_size = 256
-dim_lstm_context = 256
-dim_lstm_question = 64
+dim_lstm_context = 128
+dim_lstm_question = 32
 dim_emb = 50
 
-dim_fc_beg = 512
-dim_fc_end = 512
-drop_beg = 0.2
-drop_end = 0.2
+dim_fc_beg = 301
+dim_fc_end = 301
+drop_beg = 0.5
+drop_end = 0.5
 
 reg_beg_kernel = 1e-3
 reg_end_kernel = 1e-3
@@ -50,17 +50,17 @@ log_filepath = '/tmp/keras_squad_normal_log'
 data preprocess
 """
 embedding_matrix, vocab_size, pad_txt_train_cnt, pad_txt_train_qst, pad_txt_dev_cnt, pad_txt_dev_qst, \
-    idx_train_beg, idx_train_end, idx_dev_beg, idx_dev_end, max_context_length, max_question_length = context_question_text_preprocess()
+    idx_train_beg, idx_train_end, idx_dev_beg, idx_dev_end = context_question_text_preprocess(cnt_max_len, qn_max_len)
 
-idx_train_beg_array = to_categorical(idx_train_beg, num_classes=max_context_length)
-idx_dev_beg_array = to_categorical(idx_dev_beg, num_classes=max_context_length)
-idx_train_end_array = to_categorical(idx_train_end, num_classes=max_context_length)
-idx_dev_end_array = to_categorical(idx_dev_end, num_classes=max_context_length)
+idx_train_beg_array = to_categorical(idx_train_beg, num_classes=cnt_max_len)
+idx_dev_beg_array = to_categorical(idx_dev_beg, num_classes=cnt_max_len)
+idx_train_end_array = to_categorical(idx_train_end, num_classes=cnt_max_len)
+idx_dev_end_array = to_categorical(idx_dev_end, num_classes=cnt_max_len)
 
 """
 context represent
 """
-context_input = Input(shape=(max_context_length,), dtype='int32', name='context_input')
+context_input = Input(shape=(cnt_max_len,), dtype='int32', name='context_input')
 context_emb = Embedding(input_dim=vocab_size, output_dim=dim_emb, trainable=True)(context_input)
 context_lstm = Bidirectional(LSTM(units=dim_lstm_context//2, return_sequences=True))(context_emb)
 # todo : other text information
@@ -68,7 +68,7 @@ context_lstm = Bidirectional(LSTM(units=dim_lstm_context//2, return_sequences=Tr
 """
 query represent
 """
-question_input = Input(shape=(max_question_length,), dtype='int32', name='question_input')
+question_input = Input(shape=(qn_max_len,), dtype='int32', name='question_input')
 question_emb = Embedding(input_dim=vocab_size, output_dim=dim_emb, trainable=True)(question_input)
 question_lstm = Bidirectional(LSTM(units=dim_lstm_question//2))(question_emb)
 # todo : attention
@@ -76,26 +76,26 @@ question_lstm = Bidirectional(LSTM(units=dim_lstm_question//2))(question_emb)
 """
 self define layer: predict index
 """
-inx_beg = MyLayer(output_dim=max_context_length, dim_lstm_context=dim_lstm_context, dim_lstm_question=dim_lstm_question)([context_lstm, question_lstm])
-inx_end = MyLayer(output_dim=max_context_length, dim_lstm_context=dim_lstm_context, dim_lstm_question=dim_lstm_question)([context_lstm, question_lstm])
+inx_beg = MyLayer(output_dim=cnt_max_len, dim_lstm_context=dim_lstm_context, dim_lstm_question=dim_lstm_question)([context_lstm, question_lstm])
+inx_end = MyLayer(output_dim=cnt_max_len, dim_lstm_context=dim_lstm_context, dim_lstm_question=dim_lstm_question)([context_lstm, question_lstm])
 
 """
 batch normalization
 """
-bn_beg = BatchNormalization()(inx_beg)
-bn_end = BatchNormalization()(inx_end)
+# bn_beg = BatchNormalization()(inx_beg)
+# bn_end = BatchNormalization()(inx_end)
 """
 fully connected
 """
-dense_beg = Dense(dim_fc_beg, activation='relu', name='dense_begin')(bn_beg)
-dense_beg = Dense(dim_fc_beg, activation='relu', kernel_regularizer=regularizers.l2(0.01), activity_regularizer=regularizers.l1(0.01), name='dense_begin')(bn_beg)
+dense_beg = Dense(dim_fc_beg, activation='relu', name='dense_begin')(inx_beg)
+# dense_beg = Dense(dim_fc_beg, activation='relu', kernel_regularizer=regularizers.l2(0.01), activity_regularizer=regularizers.l1(0.01), name='dense_begin')(bn_beg)
 dropout_beg = Dropout(drop_beg)(dense_beg) # 舍弃率
-idx_beg_output = Dense(max_context_length, activation='softmax')(dropout_beg)
+idx_beg_output = Dense(cnt_max_len, activation='softmax')(dropout_beg)
 
-dense_end = Dense(dim_fc_end, activation='relu', name='dense_end')(bn_end)
-dense_end = Dense(dim_fc_end, activation='relu', kernel_regularizer=regularizers.l2(0.01), activity_regularizer=regularizers.l1(0.01), name='dense_end')(bn_end)
+dense_end = Dense(dim_fc_end, activation='relu', name='dense_end')(inx_end)
+# dense_end = Dense(dim_fc_end, activation='relu', kernel_regularizer=regularizers.l2(0.01), activity_regularizer=regularizers.l1(0.01), name='dense_end')(bn_end)
 dropout_end = Dropout(drop_end)(dense_end)
-idx_end_output = Dense(max_context_length, activation='softmax')(dropout_end)
+idx_end_output = Dense(cnt_max_len, activation='softmax')(dropout_end)
 
 model = Model(inputs=[context_input, question_input], outputs=[idx_beg_output, idx_end_output])
 model.summary()
@@ -107,7 +107,7 @@ model compile
 # clipnorm
 # clipvalue 0.5 : 所有的梯度会被变换到 -0.5 到 0.5 的空间
 # opt = Adam(lr=0.1, clipnorm=1, clipvalue=0.5)
-opt = SGD(lr=0.2)
+opt = Adam(lr=0.001)
 
 # http://keras-cn.readthedocs.io/en/latest/other/metrics/
 # 单个用以代表输出各个数据点上均值的值
@@ -130,7 +130,7 @@ model fit
 
 # validation_data : 选择超参数 which to evaluate the loss and any model metrics at the end of each epoch
 history = model.fit(x=[pad_txt_train_cnt, pad_txt_train_qst], y=[idx_train_beg_array, idx_train_end_array], epochs=num_epoch, batch_size=batch_size,
-            verbose=1, callbacks=[EarlyStopping(patience=3)], validation_data=[[pad_txt_dev_cnt, pad_txt_dev_qst], [idx_dev_beg_array, idx_dev_end_array]])
+            verbose=1, callbacks=[EarlyStopping(patience=10)], validation_split=0.1)
 model.save('squad_all_index.h5', overwrite=True)
 # """
 # model evaluate

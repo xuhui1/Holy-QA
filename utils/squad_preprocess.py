@@ -289,19 +289,24 @@ def read_txt_from_file(file_path):
 
 
 # read index from file
-def read_index_from_file(file_path):
+def read_index_from_file(file_path, cnt_max_len):
     label_list_beg = []
     label_list_end = []
     with open(file_path) as f:
         for tmp_line in f:
             tmp_beg = int(tmp_line.split(" ")[0])
             tmp_end = int(tmp_line.split(" ")[1])
-            label_list_beg.append(tmp_beg)
-            label_list_end.append(tmp_end)
+
+            if tmp_end < cnt_max_len and tmp_beg < cnt_max_len:
+                label_list_beg.append(tmp_beg)
+                label_list_end.append(tmp_end)
+            else:  # todo : about 1% index is 0, and need to find some methods to solve this problem
+                label_list_beg.append(0)
+                label_list_end.append(0)
     return label_list_beg, label_list_end
 
 
-def context_question_text_preprocess():
+def context_question_text_preprocess(cnt_max_len, qn_max_len):
     """
     get corpus
     """
@@ -318,8 +323,8 @@ def context_question_text_preprocess():
     txt_train_qst = read_txt_from_file(file_train_question)
     txt_dev_cnt = read_txt_from_file(file_dev_context)
     txt_dev_qst = read_txt_from_file(file_dev_question)
-    idx_train_beg, idx_train_end = read_index_from_file(file_train_span)
-    idx_dev_beg, idx_dev_end = read_index_from_file(file_dev_span)
+    idx_train_beg, idx_train_end = read_index_from_file(file_train_span, cnt_max_len)
+    idx_dev_beg, idx_dev_end = read_index_from_file(file_dev_span, cnt_max_len)
 
     cnt_all_txt = txt_train_cnt+txt_dev_cnt
     qst_all_txt = txt_train_qst+txt_dev_qst
@@ -328,10 +333,6 @@ def context_question_text_preprocess():
     # 求 context 和 question 的长度列表
     l_cnt = list(map(lambda x: len(T.text_to_word_sequence(x)), cnt_all_txt))
     l_qst = list(map(lambda x: len(T.text_to_word_sequence(x)), qst_all_txt))
-
-    # 求context 和 question 的最大长度(词)
-    max_cnt_lngth = max(l_cnt)
-    max_qst_lngth = max(l_qst)
 
     # 求 context 和 question 的平均长度(词)
     import functools
@@ -351,10 +352,10 @@ def context_question_text_preprocess():
     enc_txt_dev_cnt = t.texts_to_sequences(txt_dev_cnt)
     enc_txt_dev_qst = t.texts_to_sequences(txt_dev_qst)
 
-    pad_txt_train_cnt = pad_sequences(enc_txt_train_cnt, maxlen=max_cnt_lngth, padding='post')
-    pad_txt_train_qst = pad_sequences(enc_txt_train_qst, maxlen=max_qst_lngth, padding='post')
-    pad_txt_dev_cnt = pad_sequences(enc_txt_dev_cnt, maxlen=max_cnt_lngth, padding='post')
-    pad_txt_dev_qst = pad_sequences(enc_txt_dev_qst, maxlen=max_qst_lngth, padding='post')
+    pad_txt_train_cnt = pad_sequences(enc_txt_train_cnt, maxlen=cnt_max_len, padding='post')
+    pad_txt_train_qst = pad_sequences(enc_txt_train_qst, maxlen=qn_max_len, padding='post')
+    pad_txt_dev_cnt = pad_sequences(enc_txt_dev_cnt, maxlen=cnt_max_len, padding='post')
+    pad_txt_dev_qst = pad_sequences(enc_txt_dev_qst, maxlen=qn_max_len, padding='post')
 
     # load embedding
     embeddings_index = load_emb()
@@ -367,14 +368,14 @@ def context_question_text_preprocess():
             embedding_matrix[i] = embedding_vector
 
     print("context average number of character is {}".format(l_average_cnt))
-    print("context max number of character is {}".format(max_cnt_lngth))
+    print("context max number of character is {}".format(cnt_max_len))
     print("question average number of character is {}".format(l_average_qst))
-    print("question max number of character is {}".format(max_qst_lngth))
+    print("question max number of character is {}".format(qn_max_len))
 
     print("index of answer is index of word, not character")
 
     return embedding_matrix, vocab_size, pad_txt_train_cnt, pad_txt_train_qst, pad_txt_dev_cnt, pad_txt_dev_qst, \
-           idx_train_beg, idx_train_end, idx_dev_beg, idx_dev_end, max_cnt_lngth, max_qst_lngth
+           idx_train_beg, idx_train_end, idx_dev_beg, idx_dev_end
 
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@ from keras.engine.topology import Layer
 from keras.initializers import RandomNormal
 
 
-class MyLayer(Layer):
+class AttnLayer(Layer):
     def __init__(self, output_dim, dim_lstm_context, dim_lstm_question, **kwargs):
         self.output_dim = output_dim
         self.dim_lstm_context = dim_lstm_context
@@ -13,23 +13,33 @@ class MyLayer(Layer):
     # 这是定义权重的方法，可训练的权应该在这里被加入列
     def build(self, input_shape):
         # Create a trainable weight variable for this layer.
-        self.kernel = self.add_weight(name='kernel',
-                                      shape=(self.dim_lstm_context, self.dim_lstm_question),
+        self.ws = self.add_weight(name='similarity',
+                                      shape=(self.dim_lstm_context * 6),
                                       initializer=RandomNormal(mean=0.0, stddev=0.5, seed=None),
                                       trainable=True)
-        super(MyLayer, self).build(input_shape)  # Be sure to call this somewhere!
+
+        self.kernel = self.add_weight(name='kernel',
+                                      shape=(self.dim_lstm_context * 2),
+                                      initializer=RandomNormal(mean=0.0, stddev=0.5, seed=None),
+                                      trainable=True)
+
+        super(AttnLayer, self).build(input_shape)  # Be sure to call this somewhere!
 
     # 这是定义层功能的方法，除非你希望你写的层支持masking，否则你只需要关心call的第一个参数：输入张量
     def call(self, x):
 
-        all_cnt = x[0]  # context_padding_length, dim_lstm_context
-        print("input context shape is {}".format(all_cnt.shape))
-        all_qst = x[1]  # question_padding_length, dim_lstm_question
-        print("input question shape is {}".format(all_qst.shape))
-        tmp1 = K.dot(all_cnt, self.kernel)
-        # tmp2 = tf.transpose(all_qst, perm=[1, 0])
-        tmp3 = K.batch_dot(tmp1, all_qst)
-        print("return tensor shape is {}".format(tmp3.shape))
+        batch_cnt = x[0]  # context H
+        print("input context shape is {}".format(batch_cnt.shape))
+        batch_qst = x[1]  # query U
+        print("input question shape is {}".format(batch_qst.shape))
+
+        ## Compute Stj
+
+        ## Context 2 Query Attention
+        # ai = softmax(St:)
+
+        ## Query 2 Context Attention
+
         return tmp3
     # 如果你的层修改了输入数据的shape，你应该在这里指定shape变化的方法，这个函数使得Keras可以做自动shape推断
     def compute_output_shape(self, input_shape):

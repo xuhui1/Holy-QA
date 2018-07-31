@@ -273,10 +273,12 @@ class QAModel(object):
         ###################################################### RNET QUESTION CONTEXT ATTENTION and SELF ATTENTION  #######################################
         if self.FLAGS.rnet_attention:  ##perform Question Passage and Self Matching attention from R-Net
 
-            rnet_layer = Attention_Match_RNN(self.keep_prob, self.FLAGS.hidden_size_encoder, self.FLAGS.hidden_size_qp_matching, self.FLAGS.hidden_size_sm_matching)
+            rnet_layer = Attention_Match_RNN(self.keep_prob, self.FLAGS.hidden_size_encoder,
+                                             self.FLAGS.hidden_size_qp_matching, self.FLAGS.hidden_size_sm_matching)
 
            # Implement better question_passage matching
-            v_P = rnet_layer.build_graph_qp_matching(context_hiddens, question_hiddens, self.qn_mask, self.context_mask, self.FLAGS.context_len, self.FLAGS.question_len)
+            v_P = rnet_layer.build_graph_qp_matching(context_hiddens, question_hiddens, self.qn_mask, self.context_mask,
+                                                     self.FLAGS.context_len, self.FLAGS.question_len)
 
             self.rnet_attention = v_P
 
